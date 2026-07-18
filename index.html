@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Price Range Analysis · Cognifyz Data Analyst Internship</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0d0f0c;
+    --panel:#14170f;
+    --line:#2a2f21;
+    --ink:#eef0e6;
+    --muted:#9aa38a;
+    --dark-green:#1e5e3a;
+    --green:#3f9e5c;
+    --yellow:#d9b93b;
+    --orange:#d9772e;
+    --red:#c1443a;
+    --white:#8a8f80;
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height:1.5;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:48px 24px 80px;}
+
+  header{border-bottom:1px solid var(--line); padding-bottom:28px; margin-bottom:40px;}
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--yellow);
+    margin-bottom:14px;
+  }
+  h1{
+    font-size:clamp(28px,5vw,46px);
+    font-weight:400;
+    letter-spacing:-0.01em;
+    margin-bottom:10px;
+  }
+  h1 em{ font-style:italic; color:var(--muted); }
+  .sub{ color:var(--muted); font-size:15px; max-width:60ch; }
+
+  .menu-ticket{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--muted);
+    margin-top:20px;
+    display:flex; gap:18px; flex-wrap:wrap;
+  }
+  .menu-ticket span{ color:var(--ink); }
+
+  section{ margin-bottom:56px; }
+  h2{
+    font-family:var(--mono);
+    font-size:13px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:20px;
+    display:flex; align-items:center; gap:12px;
+  }
+  h2::after{ content:""; flex:1; height:1px; background:var(--line); }
+
+  .price-tags{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    gap:14px;
+  }
+  .tag{
+    border:1px solid var(--line);
+    background:var(--panel);
+    padding:20px;
+    position:relative;
+  }
+  .tag .rng{
+    font-family:var(--mono);
+    color:var(--yellow);
+    font-size:12px;
+    letter-spacing:.08em;
+  }
+  .tag .count{
+    font-size:34px;
+    margin:8px 0 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tag .pct{ color:var(--muted); font-size:13px; }
+  .tag.winner{ border-color:var(--yellow); }
+  .tag.winner::before{
+    content:"MOST COMMON";
+    position:absolute; top:-9px; left:20px;
+    background:var(--yellow); color:#14170f;
+    font-family:var(--mono); font-size:10px; letter-spacing:.08em;
+    padding:2px 8px;
+  }
+
+  .chart-panel{
+    border:1px solid var(--line);
+    background:var(--panel);
+    padding:24px;
+  }
+  .chart-box{ position:relative; height:320px; }
+
+  .swatches{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    margin-top:20px;
+  }
+  .swatch{
+    background:var(--panel);
+    padding:16px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .dot{ width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+  .swatch .lbl{ font-family:var(--mono); font-size:12px; color:var(--muted); }
+  .swatch .val{ font-size:13px; }
+
+  .result{
+    border:1px solid var(--yellow);
+    background:linear-gradient(180deg, rgba(217,185,59,.08), transparent);
+    padding:28px;
+    display:flex; align-items:center; gap:24px; flex-wrap:wrap;
+  }
+  .result .dot-big{ width:52px; height:52px; border-radius:50%; background:var(--yellow); flex-shrink:0; box-shadow:0 0 24px rgba(217,185,59,.4);}
+  .result .rtext{ flex:1; min-width:220px; }
+  .result .rtext .k{ font-family:var(--mono); font-size:12px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase; margin-bottom:6px;}
+  .result .rtext .v{ font-size:22px; }
+  .result .rtext .v strong{ color:var(--yellow); }
+
+  footer{
+    margin-top:60px; padding-top:24px; border-top:1px solid var(--line);
+    font-family:var(--mono); font-size:12px; color:var(--muted);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;
+  }
+  a{ color:var(--yellow); text-decoration:none; }
+  a:hover{ text-decoration:underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Cognifyz Technologies · Data Analyst Internship</div>
+    <h1>Price Range Analysis <em>— Zomato Restaurant Dataset</em></h1>
+    <p class="sub">A restaurant's price tier turns out to be one of the strongest single predictors of how well it's rated. Below: distribution across 9,551 restaurants, average rating per tier, and the color that marks the top performer.</p>
+    <div class="menu-ticket">
+      <div>Restaurants analyzed <span>9,551</span></div>
+      <div>Price tiers <span>4</span></div>
+      <div>Rating colors <span>6</span></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>01 · Price range distribution</h2>
+    <div class="price-tags">
+      <div class="tag winner">
+        <div class="rng">PRICE RANGE 1 · $</div>
+        <div class="count">4,444</div>
+        <div class="pct">46.5% of restaurants</div>
+      </div>
+      <div class="tag">
+        <div class="rng">PRICE RANGE 2 · $$</div>
+        <div class="count">3,113</div>
+        <div class="pct">32.6% of restaurants</div>
+      </div>
+      <div class="tag">
+        <div class="rng">PRICE RANGE 3 · $$$</div>
+        <div class="count">1,408</div>
+        <div class="pct">14.7% of restaurants</div>
+      </div>
+      <div class="tag">
+        <div class="rng">PRICE RANGE 4 · $$$$</div>
+        <div class="count">586</div>
+        <div class="pct">6.1% of restaurants</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>02 · Average rating by price range</h2>
+    <div class="chart-panel">
+      <div class="chart-box"><canvas id="ratingChart"></canvas></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>03 · Rating color scale (reference)</h2>
+    <div class="swatches">
+      <div class="swatch"><div class="dot" style="background:#8a8f80"></div><div><div class="lbl">WHITE</div><div class="val">0.0 rating</div></div></div>
+      <div class="swatch"><div class="dot" style="background:#c1443a"></div><div><div class="lbl">RED</div><div class="val">1.8 – 2.4</div></div></div>
+      <div class="swatch"><div class="dot" style="background:#d9772e"></div><div><div class="lbl">ORANGE</div><div class="val">2.5 – 3.4</div></div></div>
+      <div class="swatch"><div class="dot" style="background:#d9b93b"></div><div><div class="lbl">YELLOW</div><div class="val">3.5 – 3.9</div></div></div>
+      <div class="swatch"><div class="dot" style="background:#3f9e5c"></div><div><div class="lbl">GREEN</div><div class="val">4.0 – 4.4</div></div></div>
+      <div class="swatch"><div class="dot" style="background:#1e5e3a"></div><div><div class="lbl">DARK GREEN</div><div class="val">4.5 – 4.9</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>04 · Result</h2>
+    <div class="result">
+      <div class="dot-big"></div>
+      <div class="rtext">
+        <div class="k">Highest average rating</div>
+        <div class="v">Price range <strong>4</strong> averages <strong>3.82</strong> — falling in the <strong>Yellow</strong> band</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Task 2 · Price Range Analysis</span>
+    <span>Dataset: Zomato Restaurants · <a href="https://github.com/" target="_blank">GitHub</a></span>
+  </footer>
+
+</div>
+
+<script>
+const ctx = document.getElementById('ratingChart');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['Price Range 1', 'Price Range 2', 'Price Range 3', 'Price Range 4'],
+    datasets: [{
+      label: 'Average Rating',
+      data: [2.00, 2.94, 3.68, 3.82],
+      backgroundColor: ['#d9772e', '#d9772e', '#d9b93b', '#d9b93b'],
+      borderRadius: 2,
+      barThickness: 56
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#14170f',
+        borderColor: '#2a2f21',
+        borderWidth: 1,
+        titleFont: { family: 'monospace' },
+        bodyFont: { family: 'monospace' }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#9aa38a', font: { family: 'monospace', size: 11 } },
+        grid: { color: '#2a2f21' }
+      },
+      y: {
+        beginAtZero: true,
+        max: 5,
+        ticks: { color: '#9aa38a', font: { family: 'monospace', size: 11 } },
+        grid: { color: '#2a2f21' }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
